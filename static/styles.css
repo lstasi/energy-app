@@ -1,0 +1,18 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+  }
+  #gauge-container {
+    margin: 50px auto;
+  }
+  #watt-value {
+    font-size: 24px;
+    margin-top: 10px;
+  }
+canvas#gauge-container {
+    width: 300px;
+    height: 300px;
+    display: block;
+    margin: 20px auto;
+}
