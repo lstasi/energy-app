@@ -1,0 +1,6 @@
+[Desktop Entry]
+# copy to ~/.config/autostart/browser-fullscreen.desktop
+Type=Application
+Name=Start Browser Fullscreen
+Exec=chromium-browser --app=http://localhost:5000 --start-fullscreen
+X-GNOME-Autostart-enabled=true
