@@ -3,9 +3,9 @@ Description=Energy App Backend Service
 After=network.target
 
 [Service]
-User=pi
-WorkingDirectory=/home/pi/energy-app
-ExecStart=/usr/bin/python3 /home/pi/energy-app/server.py
+User=root
+WorkingDirectory=/opt/energy-app
+ExecStart=/usr/bin/python3 /opt/energy-app/server.py
 Restart=always
 
 [Install]
