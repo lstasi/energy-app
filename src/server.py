@@ -1,17 +1,15 @@
-from flask import Flask, jsonify, send_from_directory
 import requests
+from flask import Flask, jsonify
+from config import EM_URL, EM_USER, EM_PASS
 
 app = Flask(__name__, static_folder='static')
-
-# Endpoint to fetch data from the external service
-DATA_ENDPOINT = "http://127.0.0.1/emeter/0"
 
 @app.route('/api/power', methods=['GET'])
 def get_power_data():
     try:
         # Fetch data from external service
         # Basic Auth admin:admin
-        response = requests.get(DATA_ENDPOINT, auth=('admin', 'admin'))
+        response = requests.get(EM_URL, auth=(EM_USER, EM_PASS))
         data = response.json()
        # Log data to console
         watt_level = data.get("power", 0)

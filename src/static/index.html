@@ -51,14 +51,26 @@
       fetch('/api/power')
         .then((response) => response.json())
         .then((data) => {
-          const wattLevel = data.watt_level || 0;
+          // Convert to integer
+          const wattLevel = parseInt(data.watt_level) || 0;
           gauge.set(wattLevel);
-          document.getElementById("watt-value").innerText = `${wattLevel} W`;
+          
+          // Format display value
+          let displayValue;
+          if (wattLevel >= 1000) {
+            const kW = (wattLevel / 1000).toFixed(2);
+            displayValue = `${kW} kW`;
+          } else {
+            const W = Math.round(wattLevel);
+            displayValue = `${W} W`;
+          }
+          
+          document.getElementById("watt-value").innerText = displayValue;
         })
         .catch((error) => console.error("Error fetching data:", error));
     }
 
-    setInterval(fetchPowerData, 1000);
+    setInterval(fetchPowerData, 2000);
     fetchPowerData();
   </script>
 </body>
