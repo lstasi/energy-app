@@ -2,6 +2,8 @@ import curses
 import time
 import requests
 from config import EM_URL, EM_USER, EM_PASS
+import collections
+from datetime import datetime, timedelta
 
 class PowerMeter:
     def __init__(self):
@@ -30,12 +32,31 @@ class PowerMeter:
             'k': ['█   █',' █ █ ','██   ',' █ █ ','█   █'],
             'W': ['█   █','█   █','█ █ █','██ ██','█   █']
         }
+        self.power_readings = collections.deque(maxlen=10)  # Store last 5 readings
 
     def get_power(self):
         try:
             response = requests.get(EM_URL, auth=(EM_USER, EM_PASS))
             data = response.json()
-            return int(data.get("power", 0))
+            current_power = int(data.get("power", 0))
+            
+            # Add new reading with timestamp
+            now = datetime.now()
+            self.power_readings.append((current_power, now))
+            
+            # Remove readings older than 5 seconds
+            cutoff_time = now - timedelta(seconds=10)
+            self.power_readings = collections.deque(
+                [(p, t) for p, t in self.power_readings if t >= cutoff_time],
+                maxlen=5
+            )
+            
+            # Calculate average of available readings
+            if self.power_readings:
+                avg_power = sum(p for p, _ in self.power_readings) / len(self.power_readings)
+                return int(avg_power)
+            return current_power
+            
         except:
             return 0
 
