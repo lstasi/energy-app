@@ -52,11 +52,6 @@ class PowerMeter:
         power_ratio = power / self.max_power
         filled_width = int(bar_width * power_ratio)
         
-        # Draw title and border
-        self.stdscr.box()
-        title = "Power Monitor"
-        self.stdscr.addstr(0, (width - len(title)) // 2, title)
-        
         # Draw multiple power bars for better visualization
         for i in range(6):
             if power_ratio < 0.6:
@@ -73,11 +68,9 @@ class PowerMeter:
         else:
             power_str = f"{int(power)} W / {self.max_power} W"
         
-        # Add timestamp and centered power value
-        timestamp = time.strftime("%H:%M:%S")
+        # Add centered power value
         self.stdscr.addstr(10, (width - len(power_str)) // 2, power_str, color)
-        self.stdscr.addstr(height-2, 2, f"Updated: {timestamp}")
-
+   
         # Format power value
         if power >= 1000:
             power_str = f"{power/1000:.2f}kW"
