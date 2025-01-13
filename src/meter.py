@@ -53,7 +53,7 @@ class PowerMeter:
         filled_width = int(bar_width * power_ratio)
         
         # Draw multiple power bars for better visualization
-        for i in range(6):
+        for i in range(10):
             if power_ratio < 0.6:
                 color = curses.color_pair(1)
             elif power_ratio < 0.8:
@@ -67,10 +67,7 @@ class PowerMeter:
             power_str = f"{power/1000:.2f} kW / {self.max_power/1000:.2f} kW"
         else:
             power_str = f"{int(power)} W / {self.max_power} W"
-        
-        # Add centered power value
-        self.stdscr.addstr(10, (width - len(power_str)) // 2, power_str, color)
-   
+  
         # Format power value
         if power >= 1000:
             power_str = f"{power/1000:.2f}kW"
@@ -80,7 +77,7 @@ class PowerMeter:
         # Calculate position for centered large number
         number_width = len(power_str) * 6  # Each digit is 5 chars wide + 1 space
         x_pos = (width - number_width) // 2
-        y_pos = 8  # Position below the bars
+        y_pos = 14  # Position below the bars
 
         self.draw_large_number(power_str, y_pos, x_pos, color)
 
