@@ -14,6 +14,22 @@ class PowerMeter:
         self.max_power = 5000
         # Set terminal size for 480x320 display (approximately 40x15 characters)
         print('\x1b[8;15;40t')
+        self.large_digits = {
+            '0': ['█████','█   █','█   █','█   █','█████'],
+            '1': ['  █  ',' ██  ','  █  ','  █  ','█████'],
+            '2': ['█████','    █','█████','█    ','█████'],
+            '3': ['█████','    █','█████','    █','█████'],
+            '4': ['█   █','█   █','█████','    █','    █'],
+            '5': ['█████','█    ','█████','    █','█████'],
+            '6': ['█████','█    ','█████','█   █','█████'],
+            '7': ['█████','    █','   █ ','  █  ',' █   '],
+            '8': ['█████','█   █','█████','█   █','█████'],
+            '9': ['█████','█   █','█████','    █','█████'],
+            '.': ['     ','     ','     ','  █  ','     '],
+            ' ': ['     ','     ','     ','     ','     '],
+            'k': ['█   █',' █ █ ','██   ',' █ █ ','█   █'],
+            'W': ['█   █','█   █','█ █ █','██ ██','█   █']
+        }
 
     def get_power(self):
         try:
@@ -22,6 +38,13 @@ class PowerMeter:
             return int(data.get("power", 0))
         except:
             return 0
+
+    def draw_large_number(self, number_str, y_pos, x_pos, color):
+        for row in range(5):
+            line = ''
+            for char in number_str:
+                line += self.large_digits[char][row] + ' '
+            self.stdscr.addstr(y_pos + row, x_pos, line, color)
 
     def draw_bar(self, power):
         height, width = self.stdscr.getmaxyx()
@@ -54,6 +77,19 @@ class PowerMeter:
         timestamp = time.strftime("%H:%M:%S")
         self.stdscr.addstr(10, (width - len(power_str)) // 2, power_str, color)
         self.stdscr.addstr(height-2, 2, f"Updated: {timestamp}")
+
+        # Format power value
+        if power >= 1000:
+            power_str = f"{power/1000:.2f}kW"
+        else:
+            power_str = f"{int(power)}W"
+        
+        # Calculate position for centered large number
+        number_width = len(power_str) * 6  # Each digit is 5 chars wide + 1 space
+        x_pos = (width - number_width) // 2
+        y_pos = 8  # Position below the bars
+
+        self.draw_large_number(power_str, y_pos, x_pos, color)
 
     def run(self):
         try:
