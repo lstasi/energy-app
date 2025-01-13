@@ -60,7 +60,7 @@ class PowerMeter:
                 color = curses.color_pair(2)
             else:
                 color = curses.color_pair(3)
-            self.stdscr.addstr(i+2, 10, f"{'█' * filled_width}{' ' * (bar_width - filled_width)}", color)
+            self.stdscr.addstr(i+3, 3, f"{'█' * filled_width}{' ' * (bar_width - filled_width)}", color)
         
         # Format and center power value
         if power >= 1000:
@@ -77,7 +77,7 @@ class PowerMeter:
         # Calculate position for centered large number
         number_width = len(power_str) * 6  # Each digit is 5 chars wide + 1 space
         x_pos = (width - number_width) // 2
-        y_pos = 25  # Position below the bars
+        y_pos = 26  # Position below the bars
 
         self.draw_large_number(power_str, y_pos, x_pos, color)
 
