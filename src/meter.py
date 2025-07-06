@@ -13,7 +13,7 @@ class PowerMeter:
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
         curses.init_pair(3, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.curs_set(0)
-        self.max_power = 5000
+        self.max_power = 8625
         # Set terminal size for 480x320 display (approximately 40x15 characters)
         print('\x1b[8;15;40t')
         self.large_digits = {
