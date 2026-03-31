@@ -1,18 +1,138 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 20px;
-  }
-  #gauge-container {
-    margin: 50px auto;
-  }
-  #watt-value {
-    font-size: 24px;
-    margin-top: 10px;
-  }
-canvas#gauge-container {
-    width: 300px;
-    height: 300px;
-    display: block;
-    margin: 20px auto;
+  background: #0a0a0a;
+  color: #e0e0e0;
+  font-family: 'Courier New', monospace;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 8px;
+  gap: 8px;
+}
+
+/* ── Power section ─────────────────────────────────────────── */
+#power-section {
+  text-align: center;
+  flex: 0 0 auto;
+  padding: 8px 0;
+}
+
+#power-value {
+  font-size: 4em;
+  font-weight: bold;
+  color: #00ff88;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+#power-label {
+  font-size: 0.7em;
+  color: #666;
+  letter-spacing: 4px;
+  margin-top: 4px;
+}
+
+/* ── Price section ─────────────────────────────────────────── */
+#price-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+#price-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.5em;
+}
+
+.light {
+  font-size: 1.2em;
+  color: #444;
+}
+.light.green  { color: #00ff44; }
+.light.yellow { color: #ffdd00; }
+.light.red    { color: #ff3333; }
+
+#cost-rate {
+  font-size: 1.2em;
+  color: #aaa;
+}
+
+#next-cheaper {
+  font-size: 0.85em;
+  color: #00aaff;
+}
+
+/* ── Hourly chart ──────────────────────────────────────────── */
+#chart-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#chart-title {
+  font-size: 0.6em;
+  color: #555;
+  letter-spacing: 3px;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+#hourly-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: calc(100% - 20px);
+  padding: 0 2px;
+}
+
+.hour-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+.bar-fill {
+  width: 100%;
+  opacity: 0.65;
+  min-height: 2px;
+  transition: height 0.3s ease;
+}
+.bar-fill.green  { background: #00ff44; }
+.bar-fill.yellow { background: #ffdd00; }
+.bar-fill.red    { background: #ff3333; }
+
+.hour-bar.current .bar-fill {
+  opacity: 1;
+  outline: 1px solid #fff;
+}
+
+.bar-label {
+  font-size: 0.5em;
+  color: #555;
+  margin-top: 2px;
+  text-align: center;
+}
+
+.hour-bar.current .bar-label {
+  color: #fff;
 }
