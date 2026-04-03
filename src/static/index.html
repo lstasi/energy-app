@@ -20,9 +20,15 @@
       <div id="price-row">
         <span id="price-light" class="light">●</span>
         <span id="price-value">-- €/kWh</span>
+        <span id="cost-rate" style="margin-left:12px;font-size:0.85em;color:#aaa">-- €/h</span>
       </div>
-      <div id="cost-rate">-- €/h</div>
-      <div id="next-cheaper">Cargando precios…</div>
+      <div id="costs-row" style="font-size:1em;color:#00ccff;margin-top:4px">
+        Hoy: <span id="daily-cost">--</span> €
+        &nbsp;|&nbsp;
+        Mes: <span id="monthly-cost">--</span> €
+      </div>
+      <div id="next3" style="font-size:0.95em;color:#888;margin-top:4px">--</div>
+      <div id="next-green" style="font-size:1.05em;color:#00ff44;margin-top:4px">Cargando precios…</div>
     </div>
 
     <!-- Hourly price bar chart for today -->
@@ -70,7 +76,7 @@
         .then(data => {
           if (data.error) {
             document.getElementById('price-value').textContent = 'Error';
-            document.getElementById('next-cheaper').textContent = data.error;
+            document.getElementById('next-green').textContent = data.error;
             return;
           }
 
@@ -83,23 +89,40 @@
           document.getElementById('price-value').textContent =
             price != null ? price.toFixed(4) + ' €/kWh' : '-- €/kWh';
 
-          // Next cheaper hour
-          if (data.next_cheaper_hour != null) {
-            document.getElementById('next-cheaper').textContent =
-              `Más barato a las ${data.next_cheaper_hour}:00 ` +
-              `(${data.next_cheaper_price.toFixed(4)} €/kWh)`;
-          } else if (price != null) {
-            document.getElementById('next-cheaper').textContent =
-              'Ya estamos en la hora más barata del resto del día';
+          // Next 3 hours
+          if (data.next3 && data.next3.length) {
+            document.getElementById('next3').textContent =
+              'Próx: ' + data.next3.map(p => `${p.hour}h ${p.price_kwh.toFixed(3)}€`).join(' · ');
+          }
+
+          // Next green
+          const ng = document.getElementById('next-green');
+          if (data.next_green_hour != null) {
+            const tmr = data.next_green_tomorrow ? ' (mañana)' : '';
+            ng.textContent = `Verde: ${data.next_green_hour}:00${tmr} · ${data.next_green_price.toFixed(4)} €/kWh`;
+          } else if (data.next_green_tomorrow) {
+            ng.textContent = 'Verde: mañana (sin datos aún)';
+          } else {
+            ng.textContent = 'Verde: no hay hoy';
           }
 
           renderChart(data.hourly_prices, data.current_hour);
         })
         .catch(err => {
           console.error('Price fetch error:', err);
-          document.getElementById('next-cheaper').textContent =
-            'Sin datos de precio';
+          document.getElementById('next-green').textContent = 'Sin datos de precio';
         });
+    }
+
+    // ── Costs polling (every 30 s) ────────────────────────────────────────
+    function fetchCosts() {
+      fetch('/api/costs')
+        .then(r => r.json())
+        .then(data => {
+          document.getElementById('daily-cost').textContent   = data.daily_cost.toFixed(2);
+          document.getElementById('monthly-cost').textContent = data.monthly_cost.toFixed(2);
+        })
+        .catch(() => {});
     }
 
     function renderChart(prices, currentHour) {
@@ -120,17 +143,20 @@
         label.className = 'bar-label';
         label.textContent = p.hour;
 
-        bar.appendChild(fill);
         bar.appendChild(label);
+        bar.appendChild(fill);
         container.appendChild(bar);
       });
     }
 
-    setInterval(fetchPower, 2000);
+    setInterval(fetchPower,  2000);
     fetchPower();
 
     setInterval(fetchPrices, 300000);
     fetchPrices();
+
+    setInterval(fetchCosts, 30000);
+    fetchCosts();
   </script>
 </body>
 </html>
