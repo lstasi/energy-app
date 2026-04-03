@@ -1,76 +1,136 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Energy App</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 20px;
-    }
-    #gauge-container {
-      margin: 50px auto;
-    }
-    #watt-value {
-      font-size: 24px;
-      margin-top: 10px;
-    }
-  </style>
+  <title>Energy Monitor</title>
+  <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <canvas id="gauge-container"></canvas>
-  <div id="watt-value">0 W</div>
+  <div id="app">
 
-  <script src="https://cdn.jsdelivr.net/npm/gaugeJS/dist/gauge.min.js"></script>
+    <!-- Current power consumption -->
+    <div id="power-section">
+      <div id="power-value">-- W</div>
+      <div id="power-label">CONSUMO ACTUAL</div>
+    </div>
+
+    <!-- Current price and spend rate -->
+    <div id="price-section">
+      <div id="price-row">
+        <span id="price-light" class="light">●</span>
+        <span id="price-value">-- €/kWh</span>
+      </div>
+      <div id="cost-rate">-- €/h</div>
+      <div id="next-cheaper">Cargando precios…</div>
+    </div>
+
+    <!-- Hourly price bar chart for today -->
+    <div id="chart-section">
+      <div id="chart-title">PRECIOS HOY (€/kWh)</div>
+      <div id="hourly-chart"></div>
+    </div>
+
+  </div>
+
   <script>
-    const opts = {
-      angle: 0.15,
-      lineWidth: 0.44,
-      radiusScale: 1,
-      pointer: { length: 0.6, strokeWidth: 0.035, color: "#000000" },
-      staticZones: [
-        { strokeStyle: "#F03E3E", min: 3450, max: 4000 }, // Red
-        { strokeStyle: "#FFDD00", min: 3000, max: 3450 }, // Yellow
-        { strokeStyle: "#30B32D", min: 0, max: 3000 }, // Green
-      ],
-      limitMax: false,
-      limitMin: false,
-      highDpiSupport: true,
-    };
+    // Price thresholds for traffic-light colouring (€/kWh)
+    const THRESHOLDS = { green: 0.10, yellow: 0.18 };
 
-    const gaugeTarget = document.getElementById("gauge-container");
-    const gauge = new Gauge(gaugeTarget).setOptions(opts);
-    gauge.maxValue = 4000;
-    gauge.setMinValue(0);
-    gauge.animationSpeed = 32;
-
-    function fetchPowerData() {
-      fetch('/api/power')
-        .then((response) => response.json())
-        .then((data) => {
-          // Convert to integer
-          const wattLevel = parseInt(data.watt_level) || 0;
-          gauge.set(wattLevel);
-          
-          // Format display value
-          let displayValue;
-          if (wattLevel >= 1000) {
-            const kW = (wattLevel / 1000).toFixed(2);
-            displayValue = `${kW} kW`;
-          } else {
-            const W = Math.round(wattLevel);
-            displayValue = `${W} W`;
-          }
-          
-          document.getElementById("watt-value").innerText = displayValue;
-        })
-        .catch((error) => console.error("Error fetching data:", error));
+    function priceColor(price) {
+      if (price <= THRESHOLDS.green) return 'green';
+      if (price <= THRESHOLDS.yellow) return 'yellow';
+      return 'red';
     }
 
-    setInterval(fetchPowerData, 2000);
-    fetchPowerData();
+    let latestPrices = null;
+
+    // ── Power polling (every 2 s) ──────────────────────────────────────────
+    function fetchPower() {
+      fetch('/api/power')
+        .then(r => r.json())
+        .then(data => {
+          const watts = parseInt(data.watt_level) || 0;
+          document.getElementById('power-value').textContent =
+            watts >= 1000 ? (watts / 1000).toFixed(2) + ' kW' : watts + ' W';
+
+          if (latestPrices && latestPrices.current_price_kwh != null) {
+            const rate = (watts / 1000) * latestPrices.current_price_kwh;
+            document.getElementById('cost-rate').textContent =
+              rate.toFixed(3) + ' €/h';
+          }
+        })
+        .catch(err => console.error('Power fetch error:', err));
+    }
+
+    // ── Price polling (every 5 min; prices change hourly) ─────────────────
+    function fetchPrices() {
+      fetch('/api/prices')
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) {
+            document.getElementById('price-value').textContent = 'Error';
+            document.getElementById('next-cheaper').textContent = data.error;
+            return;
+          }
+
+          latestPrices = data;
+          const price = data.current_price_kwh;
+
+          // Traffic-light dot + numeric price
+          const light = document.getElementById('price-light');
+          light.className = 'light ' + (price != null ? priceColor(price) : '');
+          document.getElementById('price-value').textContent =
+            price != null ? price.toFixed(4) + ' €/kWh' : '-- €/kWh';
+
+          // Next cheaper hour
+          if (data.next_cheaper_hour != null) {
+            document.getElementById('next-cheaper').textContent =
+              `Más barato a las ${data.next_cheaper_hour}:00 ` +
+              `(${data.next_cheaper_price.toFixed(4)} €/kWh)`;
+          } else if (price != null) {
+            document.getElementById('next-cheaper').textContent =
+              'Ya estamos en la hora más barata del resto del día';
+          }
+
+          renderChart(data.hourly_prices, data.current_hour);
+        })
+        .catch(err => {
+          console.error('Price fetch error:', err);
+          document.getElementById('next-cheaper').textContent =
+            'Sin datos de precio';
+        });
+    }
+
+    function renderChart(prices, currentHour) {
+      if (!prices || prices.length === 0) return;
+      const maxPrice = Math.max(...prices.map(p => p.price_kwh));
+      const container = document.getElementById('hourly-chart');
+      container.innerHTML = '';
+
+      prices.forEach(p => {
+        const bar = document.createElement('div');
+        bar.className = 'hour-bar' + (p.hour === currentHour ? ' current' : '');
+
+        const fill = document.createElement('div');
+        fill.className = 'bar-fill ' + priceColor(p.price_kwh);
+        fill.style.height = (maxPrice > 0 ? (p.price_kwh / maxPrice) * 100 : 0) + '%';
+
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+        label.textContent = p.hour;
+
+        bar.appendChild(fill);
+        bar.appendChild(label);
+        container.appendChild(bar);
+      });
+    }
+
+    setInterval(fetchPower, 2000);
+    fetchPower();
+
+    setInterval(fetchPrices, 300000);
+    fetchPrices();
   </script>
 </body>
 </html>
