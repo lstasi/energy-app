@@ -36,10 +36,9 @@ def _load_costs():
         with open(COSTS_FILE) as f:
             saved = json.load(f)
         daily   = saved['daily_cost']   if saved.get('day')   == today else 0.0
-        monthly = saved['monthly_cost'] if saved.get('month') == month else 0.0
     except Exception:
-        daily = monthly = 0.0
-    _costs_last_loaded = {'daily': daily, 'monthly': monthly,
+        daily = 0.0
+    _costs_last_loaded = {'daily': daily,
                           'day': today, 'month': month, 'ts': now}
     return _costs_last_loaded
 
@@ -63,14 +62,13 @@ def _add_cost(watts, price_kwh):
         c['monthly'] = 0.0
         c['month'] = month
     increment = (watts / 1000 / 3600) * price_kwh * 2  # 2-second poll interval
-    c['daily']   += increment
-    c['monthly']  += increment
+    c['daily'] += increment
     # Save every ~60 s
     if (now - c['ts']).total_seconds() >= 60:
         try:
             with open(COSTS_FILE, 'w') as f:
                 json.dump({'day': c['day'], 'month': c['month'],
-                           'daily_cost': c['daily'], 'monthly_cost': c['monthly'],
+                           'daily_cost': c['daily'],
                            'saved_at': now.isoformat(timespec='seconds')}, f)
         except Exception:
             pass
@@ -97,8 +95,7 @@ def get_power_data():
 @app.route('/api/costs', methods=['GET'])
 def get_costs():
     c = _get_costs()
-    return jsonify({'daily_cost': round(c['daily'], 4),
-                    'monthly_cost': round(c['monthly'], 4)})
+    return jsonify({'daily_cost': round(c['daily'], 4)})
 
 
 def _fetch_hourly(date_str):

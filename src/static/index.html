@@ -24,8 +24,6 @@
       </div>
       <div id="costs-row" style="font-size:1em;color:#00ccff;margin-top:4px">
         Hoy: <span id="daily-cost">--</span> €
-        &nbsp;|&nbsp;
-        Mes: <span id="monthly-cost">--</span> €
       </div>
       <div id="next3" style="font-size:0.95em;color:#888;margin-top:4px">--</div>
       <div id="next-green" style="font-size:1.05em;color:#00ff44;margin-top:4px">Cargando precios…</div>
@@ -120,7 +118,6 @@
         .then(r => r.json())
         .then(data => {
           document.getElementById('daily-cost').textContent   = data.daily_cost.toFixed(2);
-          document.getElementById('monthly-cost').textContent = data.monthly_cost.toFixed(2);
         })
         .catch(() => {});
     }
