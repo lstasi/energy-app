@@ -256,7 +256,7 @@ class PowerMeter:
         graph_rows  = max(6, h // 2 - 1)
         chart_total = 1 + graph_rows    # row 0 (labels) + graph rows
         graph_top   = 1                 # row 0 reserved for hour labels
-        base        = chart_total       # first info row
+        base        = chart_total + 2   # first info row (2 blank rows after graph)
 
         n     = len(hourly)
         col_w = max(1, (w - 2) // n) if n else 1
