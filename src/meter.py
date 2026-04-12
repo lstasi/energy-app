@@ -252,9 +252,10 @@ class PowerMeter:
         PRICE_MAX = 0.25  # €/kWh — covers full realistic Spanish range
 
         # Layout: chart = top half (row 0 = hour labels, rows 1..chart_h = graph)
-        chart_total = max(3, h // 2)   # top half of terminal
+        # Minimum 6 graph rows so the middle is always visible even on small terminals
+        graph_rows  = max(6, h // 2 - 1)
+        chart_total = 1 + graph_rows    # row 0 (labels) + graph rows
         graph_top   = 1                 # row 0 reserved for hour labels
-        graph_rows  = chart_total - 1   # number of graph rows
         base        = chart_total       # first info row
 
         n     = len(hourly)
@@ -283,7 +284,7 @@ class PowerMeter:
             row_frac = min(1.0, max(0.0, (p['price_kwh'] - PRICE_MIN) / span))
             line_row = round((1.0 - row_frac) * (graph_rows - 1))
             line_row = max(0, min(line_row, graph_rows - 1))
-            lc = '-' * max(1, min(col_w, w - x - 1))
+            lc = '=' * max(1, min(col_w, w - x - 1))
             col_meta.append((x, attr, line_row, lc))
 
         # Draw row by row so every intermediate row is written explicitly
