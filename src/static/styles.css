@@ -25,31 +25,53 @@ body {
 
 /* ── Power section ─────────────────────────────────────────── */
 #power-section {
-  text-align: center;
   flex: 0 0 auto;
-  padding: 8px 0;
+  padding: 6px 0;
+}
+
+#power-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 #power-value {
-  font-size: 4em;
+  font-size: 1.4em;
   font-weight: bold;
   color: #00ff88;
-  letter-spacing: 2px;
-  line-height: 1;
+  white-space: nowrap;
+  min-width: 6ch;
 }
 
-#power-label {
-  font-size: 0.7em;
-  color: #666;
-  letter-spacing: 4px;
-  margin-top: 4px;
+#power-bar-track {
+  flex: 1;
+  height: 18px;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+#power-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #00ff44;
+  transition: width 0.4s ease, background 0.4s ease;
+}
+
+#power-pct {
+  font-size: 1em;
+  color: #aaa;
+  white-space: nowrap;
+  min-width: 4ch;
+  text-align: right;
 }
 
 /* ── Price section ─────────────────────────────────────────── */
 #price-section {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 4px;
   flex: 0 0 auto;
 }
@@ -70,8 +92,18 @@ body {
 .light.red    { color: #ff3333; }
 
 #cost-rate {
-  font-size: 1.2em;
+  font-size: 0.85em;
   color: #aaa;
+}
+
+#next3 {
+  font-size: 0.95em;
+  color: #888;
+}
+
+#next-green {
+  font-size: 1.05em;
+  color: #00ff44;
 }
 
 #next-cheaper {

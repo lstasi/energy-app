@@ -11,8 +11,11 @@
 
     <!-- Current power consumption -->
     <div id="power-section">
-      <div id="power-value">-- W</div>
-      <div id="power-label">CONSUMO ACTUAL</div>
+      <div id="power-bar-row">
+        <span id="power-value">-- W</span>
+        <div id="power-bar-track"><div id="power-bar-fill"></div></div>
+        <span id="power-pct">--%</span>
+      </div>
     </div>
 
     <!-- Current price and spend rate -->
@@ -20,13 +23,10 @@
       <div id="price-row">
         <span id="price-light" class="light">●</span>
         <span id="price-value">-- €/kWh</span>
-        <span id="cost-rate" style="margin-left:12px;font-size:0.85em;color:#aaa">-- €/h</span>
+        <span id="cost-rate">-- €/h</span>
       </div>
-      <div id="costs-row" style="font-size:1em;color:#00ccff;margin-top:4px">
-        Hoy: <span id="daily-cost">--</span> €
-      </div>
-      <div id="next3" style="font-size:0.95em;color:#888;margin-top:4px">--</div>
-      <div id="next-green" style="font-size:1.05em;color:#00ff44;margin-top:4px">Cargando precios…</div>
+      <div id="next3">--</div>
+      <div id="next-green">Cargando precios…</div>
     </div>
 
     <!-- Hourly price bar chart for today -->
@@ -49,14 +49,23 @@
 
     let latestPrices = null;
 
+    const MAX_POWER = 8625; // W
+
     // ── Power polling (every 2 s) ──────────────────────────────────────────
     function fetchPower() {
       fetch('/api/power')
         .then(r => r.json())
         .then(data => {
           const watts = parseInt(data.watt_level) || 0;
+          const ratio = Math.min(1, watts / MAX_POWER);
+          const pct   = Math.round(ratio * 100);
+
           document.getElementById('power-value').textContent =
             watts >= 1000 ? (watts / 1000).toFixed(2) + ' kW' : watts + ' W';
+          document.getElementById('power-bar-fill').style.width = pct + '%';
+          const color = ratio < 0.6 ? '#00ff44' : ratio < 0.8 ? '#ffdd00' : '#ff3333';
+          document.getElementById('power-bar-fill').style.background = color;
+          document.getElementById('power-pct').textContent = pct + '%';
 
           if (latestPrices && latestPrices.current_price_kwh != null) {
             const rate = (watts / 1000) * latestPrices.current_price_kwh;
@@ -112,16 +121,6 @@
         });
     }
 
-    // ── Costs polling (every 30 s) ────────────────────────────────────────
-    function fetchCosts() {
-      fetch('/api/costs')
-        .then(r => r.json())
-        .then(data => {
-          document.getElementById('daily-cost').textContent   = data.daily_cost.toFixed(2);
-        })
-        .catch(() => {});
-    }
-
     function renderChart(prices, currentHour) {
       if (!prices || prices.length === 0) return;
       const maxPrice = Math.max(...prices.map(p => p.price_kwh));
@@ -151,9 +150,6 @@
 
     setInterval(fetchPrices, 300000);
     fetchPrices();
-
-    setInterval(fetchCosts, 30000);
-    fetchCosts();
   </script>
 </body>
 </html>
