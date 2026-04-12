@@ -310,7 +310,7 @@ class PowerMeter:
             pr_str = f"Price:{current_price:.4f}€/kWh  Spend:{spend:.4f}€/h"
         else:
             pr_str = "Price: --"
-        self._addstr(base + 1, 0, pr_str[:w - 1], pcolor | curses.A_BOLD)
+        self._addstr(base + 2, 0, pr_str[:w - 1], pcolor | curses.A_BOLD)
 
         # Row 2 — Next 3 hours
         next3 = prices.get('next3', [])
@@ -319,7 +319,7 @@ class PowerMeter:
             n3_str = "Next: " + " · ".join(parts)
         else:
             n3_str = "Next: --"
-        self._addstr(base + 2, 0, n3_str[:w - 1], curses.A_BOLD)
+        self._addstr(base + 4, 0, n3_str[:w - 1], curses.A_BOLD)
 
         # Row 3 — Next green
         ng_hour  = prices.get('next_green_hour')
@@ -332,7 +332,7 @@ class PowerMeter:
             ng_str = "Green: tomorrow (TBD)"
         else:
             ng_str = "Green: none today"
-        self._addstr(base + 3, 0, ng_str[:w - 1], curses.color_pair(1) | curses.A_BOLD)
+        self._addstr(base + 6, 0, ng_str[:w - 1], curses.color_pair(1) | curses.A_BOLD)
 
     # ── Loop ───────────────────────────────────────────────────────────────
 
