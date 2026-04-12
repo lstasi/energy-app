@@ -247,46 +247,61 @@ class PowerMeter:
         else:
             bcolor = curses.color_pair(3)
 
-        # Layout: chart fills from row 0 to label row, then INFO_ROWS info rows at bottom
-        INFO_ROWS = 5
-        label_row = h - INFO_ROWS - 1
-        chart_h   = max(1, label_row)   # use all space above label row
-        chart_top = 0
-        base      = h - INFO_ROWS
+        # Fixed price scale — never adapts to current values
+        PRICE_MIN = 0.0
+        PRICE_MAX = 0.25  # €/kWh — covers full realistic Spanish range
 
-        # ── Hourly price chart ──
-        if hourly:
-            max_price = max(p['price_kwh'] for p in hourly) or 1
-            n     = len(hourly)
-            col_w = max(1, (w - 2) // n)
+        # Layout: chart = top half (row 0 = hour labels, rows 1..chart_h = graph)
+        chart_total = max(3, h // 2)   # top half of terminal
+        graph_top   = 1                 # row 0 reserved for hour labels
+        graph_rows  = chart_total - 1   # number of graph rows
+        base        = chart_total       # first info row
 
-            for col, p in enumerate(hourly):
-                x = 1 + col * col_w
-                if x >= w - 1:
-                    break
-                is_current = not p.get('tomorrow') and p['hour'] == now_hour
-                color = self._price_color(p['price_kwh'])
-                attr  = color | curses.A_BOLD if is_current else color
+        n     = len(hourly)
+        col_w = max(1, (w - 2) // n) if n else 1
 
-                bar_h = max(1, int((p['price_kwh'] / max_price) * chart_h))
-                fill  = ('█' * col_w)[:max(1, col_w)]
+        # ── Hour labels on top row ──
+        for col, p in enumerate(hourly):
+            x = 1 + col * col_w
+            if x >= w - 1:
+                break
+            is_current = not p.get('tomorrow') and p['hour'] == now_hour
+            label = f"{p['hour']:02d}" if col_w >= 2 else str(p['hour'])[-1]
+            self._addstr(0, x, label[:col_w],
+                         curses.A_BOLD | curses.A_REVERSE if is_current else curses.A_BOLD)
 
-                # Draw bar (grows from bottom of chart area upward)
-                for r in range(chart_h - bar_h, chart_h):
-                    self._addstr(chart_top + r, x, fill, attr)
+        # ── Price chart — pre-compute each column's fill start row ──
+        span = PRICE_MAX - PRICE_MIN
+        col_meta = []
+        for col, p in enumerate(hourly):
+            x = 1 + col * col_w
+            if x >= w - 1:
+                break
+            is_current = not p.get('tomorrow') and p['hour'] == now_hour
+            color = self._price_color(p['price_kwh'])
+            attr  = color | curses.A_BOLD if is_current else color
+            row_frac = min(1.0, max(0.0, (p['price_kwh'] - PRICE_MIN) / span))
+            line_row = round((1.0 - row_frac) * (graph_rows - 1))
+            line_row = max(0, min(line_row, graph_rows - 1))
+            lc = '-' * max(1, min(col_w, w - x - 1))
+            col_meta.append((x, attr, line_row, lc))
 
-                # Hour label
-                label = f"{p['hour']:02d}" if col_w >= 2 else str(p['hour'])[-1]
-                self._addstr(label_row, x, label[:col_w],
-                             curses.A_BOLD | curses.A_REVERSE if is_current else 0)
+        # Draw row by row so every intermediate row is written explicitly
+        for graph_row in range(graph_rows):
+            for (x, attr, line_row, lc) in col_meta:
+                if graph_row >= line_row:
+                    self._addstr(graph_top + graph_row, x, lc, attr)
 
-        # ── Info rows ──
-        # Row 0 — Consumption
-        if power >= 1000:
-            pow_str = f"Now: {power/1000:.2f} kW ({int(power_ratio*100)}%)"
-        else:
-            pow_str = f"Now: {int(power):4d} W  ({int(power_ratio*100)}%)"
-        self._addstr(base, 0, pow_str.center(w - 1), bcolor | curses.A_BOLD)
+        # ── Info rows at bottom ──
+
+        # Row 0 (base) — Consumption: value [|||||   ] pct%
+        bar_w  = max(4, w - 18)
+        filled = int(power_ratio * bar_w)
+        bar    = '|' * filled + ' ' * (bar_w - filled)
+        val_str = f"{power/1000:.2f}kW" if power >= 1000 else f"{int(power)}W"
+        pct_str = f"{int(power_ratio * 100)}%"
+        pow_line = f"{val_str} [{bar}] {pct_str}"
+        self._addstr(base, 0, pow_line[:w - 1], bcolor | curses.A_BOLD)
 
         # Row 1 — Price + spend rate
         if current_price is not None:
@@ -294,22 +309,18 @@ class PowerMeter:
             pr_str = f"Price:{current_price:.4f}€/kWh  Spend:{spend:.4f}€/h"
         else:
             pr_str = "Price: --"
-        self._addstr(base + 1, 0, pr_str.center(w - 1), pcolor | curses.A_BOLD)
+        self._addstr(base + 1, 0, pr_str[:w - 1], pcolor | curses.A_BOLD)
 
-        # Row 2 — Daily cost
-        cost_str = f"Today: {self.daily_cost:.2f}€"
-        self._addstr(base + 2, 0, cost_str.center(w - 1), curses.color_pair(4) | curses.A_BOLD)
-
-        # Row 3 — Next 3 hours
+        # Row 2 — Next 3 hours
         next3 = prices.get('next3', [])
         if next3:
             parts = [f"{p['hour']}h {p['price_kwh']:.3f}€" for p in next3]
             n3_str = "Next: " + " · ".join(parts)
         else:
             n3_str = "Next: --"
-        self._addstr(base + 3, 0, n3_str.center(w - 1), curses.A_BOLD)
+        self._addstr(base + 2, 0, n3_str[:w - 1], curses.A_BOLD)
 
-        # Row 4 — Next green
+        # Row 3 — Next green
         ng_hour  = prices.get('next_green_hour')
         ng_price = prices.get('next_green_price')
         ng_tmr   = prices.get('next_green_tomorrow', False)
@@ -320,7 +331,7 @@ class PowerMeter:
             ng_str = "Green: tomorrow (TBD)"
         else:
             ng_str = "Green: none today"
-        self._addstr(base + 4, 0, ng_str.center(w - 1), curses.color_pair(1) | curses.A_BOLD)
+        self._addstr(base + 3, 0, ng_str[:w - 1], curses.color_pair(1) | curses.A_BOLD)
 
     # ── Loop ───────────────────────────────────────────────────────────────
 
